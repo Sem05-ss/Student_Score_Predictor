@@ -3,6 +3,8 @@ import pandas as pd
 import joblib
 import json
 import os
+import matplotlib.pyplot as plt
+from datetime import datetime
 
 # =========================
 # PAGE CONFIG
@@ -134,7 +136,7 @@ if "page" not in st.session_state:
 # =========================
 st.sidebar.markdown("# 🎓 Student Predictor")
 
-# Navigation Buttons
+# Navigation
 if not st.session_state.logged_in:
 
     if st.sidebar.button("🔐 Login"):
@@ -143,11 +145,40 @@ if not st.session_state.logged_in:
     if st.sidebar.button("📝 Sign Up"):
         st.session_state.page = "Sign Up"
 
-# Logout
+# =========================
+# USER PROFILE
+# =========================
 if st.session_state.logged_in:
 
-    st.sidebar.success(f"👤 {st.session_state.username}")
+    role = st.session_state.role
+    username = st.session_state.username
 
+    if role == "Student":
+        user_data = users["students"][username]
+    else:
+        user_data = users["parents"][username]
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("## 👤 User Profile")
+
+    st.sidebar.image(
+        "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+        width=100
+    )
+
+    st.sidebar.write(f"### {user_data['name']}")
+    st.sidebar.write(f"**Role:** {role}")
+    st.sidebar.write(f"**Age:** {user_data['age']}")
+    st.sidebar.write(f"**DOB:** {user_data['dob']}")
+
+    if role == "Student":
+        st.sidebar.write(f"**Class:** {user_data['class']}")
+    else:
+        st.sidebar.write(f"**Relation:** {user_data['relation']}")
+
+    st.sidebar.markdown("---")
+
+    # Logout
     if st.sidebar.button("🚪 Logout"):
 
         st.session_state.logged_in = False
@@ -390,9 +421,7 @@ elif st.session_state.logged_in:
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    # =========================
-    # ACADEMIC FACTORS
-    # =========================
+    # Academic Factors
     st.markdown(
         '<p class="section-title">📊 Academic Factors</p>',
         unsafe_allow_html=True
@@ -401,32 +430,14 @@ elif st.session_state.logged_in:
     col1, col2 = st.columns(2)
 
     with col1:
-
-        hours = st.number_input(
-            "⏰ Hours Studied",
-            0.0, 24.0
-        )
-
-        previous = st.number_input(
-            "⭐ Previous Score",
-            0.0, 100.0
-        )
+        hours = st.number_input("⏰ Hours Studied", 0.0, 24.0)
+        previous = st.number_input("⭐ Previous Score", 0.0, 100.0)
 
     with col2:
+        attendance = st.number_input("📅 Attendance (%)", 0.0, 100.0)
+        sleep = st.number_input("🌙 Sleep Hours", 0.0, 12.0)
 
-        attendance = st.number_input(
-            "📅 Attendance (%)",
-            0.0, 100.0
-        )
-
-        sleep = st.number_input(
-            "🌙 Sleep Hours",
-            0.0, 12.0
-        )
-
-    # =========================
-    # PERSONAL FACTORS
-    # =========================
+    # Personal Factors
     st.markdown(
         '<p class="section-title">🧠 Personal & School Factors</p>',
         unsafe_allow_html=True
@@ -488,9 +499,7 @@ elif st.session_state.logged_in:
             ["Yes", "No"]
         )
 
-    # =========================
     # PREDICT BUTTON
-    # =========================
     if st.button("🚀 Predict Score"):
 
         data = {
@@ -498,7 +507,6 @@ elif st.session_state.logged_in:
             "Attendance": attendance,
             "Previous_Scores": previous,
             "Sleep_Hours": sleep,
-
             "Motivation_Level": motivation,
             "Teacher_Quality": teacher,
             "School_Type": school,
@@ -538,7 +546,90 @@ elif st.session_state.logged_in:
         </div>
         """, unsafe_allow_html=True)
 
-        # TIP BOX
+        # GRAPH
+        st.subheader("📊 Score Visualization")
+
+        subjects = [
+            "Study",
+            "Attendance",
+            "Previous",
+            "Predicted"
+        ]
+
+        values = [
+            hours * 4,
+            attendance,
+            previous,
+            final_score
+        ]
+
+        fig, ax = plt.subplots(figsize=(7,4))
+
+        ax.bar(subjects, values)
+
+        ax.set_ylim(0, 100)
+
+        ax.set_ylabel("Score")
+
+        ax.set_title("Student Performance Overview")
+
+        st.pyplot(fig)
+
+        # REPORT CARD
+        st.subheader("📄 Student Report Card")
+
+        grade = ""
+
+        if final_score >= 90:
+            grade = "A+"
+
+        elif final_score >= 80:
+            grade = "A"
+
+        elif final_score >= 70:
+            grade = "B"
+
+        elif final_score >= 60:
+            grade = "C"
+
+        else:
+            grade = "D"
+
+        role = st.session_state.role
+        username = st.session_state.username
+
+        user_data = users["students"][username]
+
+        report_data = {
+            "Name": user_data["name"],
+            "Class": user_data["class"],
+            "Age": user_data["age"],
+            "Hours Studied": hours,
+            "Attendance": attendance,
+            "Previous Score": previous,
+            "Predicted Score": final_score,
+            "Grade": grade,
+            "Generated On": datetime.now().strftime("%d-%m-%Y")
+        }
+
+        report_df = pd.DataFrame(
+            report_data.items(),
+            columns=["Field", "Value"]
+        )
+
+        st.table(report_df)
+
+        # DOWNLOAD BUTTON
+        csv = report_df.to_csv(index=False)
+
+        st.download_button(
+            label="⬇ Download Report Card",
+            data=csv,
+            file_name="student_report_card.csv",
+            mime="text/csv"
+        )
+
+        # TIP
         st.markdown("""
         <div class="tip-box">
         💡 Tip: Regular study + good sleep + positive mindset = better performance.
