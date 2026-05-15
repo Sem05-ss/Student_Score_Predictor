@@ -6,6 +6,19 @@ import os
 import matplotlib.pyplot as plt
 from datetime import datetime
 
+# PDF
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table
+)
+
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.platypus.tables import TableStyle
+from reportlab.lib.pagesizes import letter
+
 # =========================
 # PAGE CONFIG
 # =========================
@@ -16,55 +29,78 @@ st.set_page_config(
 )
 
 # =========================
+# THEME SESSION
+# =========================
+if "theme" not in st.session_state:
+    st.session_state.theme = "Light"
+
+# =========================
+# THEME COLORS
+# =========================
+if st.session_state.theme == "Light":
+
+    bg_color = "#f5f7ff"
+    card_color = "white"
+    text_color = "#111827"
+    subtitle_color = "#6b7280"
+
+else:
+
+    bg_color = "#0f172a"
+    card_color = "#1e293b"
+    text_color = "white"
+    subtitle_color = "#cbd5e1"
+
+# =========================
 # CUSTOM CSS
 # =========================
-st.markdown("""
+st.markdown(f"""
 <style>
 
-.stApp {
-    background: linear-gradient(to right, #f5f7ff, #eef2ff);
-}
+.stApp {{
+    background: {bg_color};
+}}
 
 /* Sidebar */
-section[data-testid="stSidebar"] {
+section[data-testid="stSidebar"] {{
     background: linear-gradient(180deg, #141e61, #0f044c);
     color: white;
-}
+}}
 
 /* Main Title */
-.main-title {
+.main-title {{
     font-size: 70px;
     font-weight: 800;
-    color: #111827;
+    color: {text_color};
     margin-bottom: 10px;
-}
+}}
 
 /* Subtitle */
-.subtitle {
+.subtitle {{
     font-size: 20px;
-    color: #6b7280;
+    color: {subtitle_color};
     margin-bottom: 20px;
-}
+}}
 
 /* Card */
-.card {
-    background-color: white;
+.card {{
+    background-color: {card_color};
     padding: 25px;
     border-radius: 20px;
     box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
     margin-bottom: 20px;
-}
+}}
 
 /* Section Heading */
-.section-title {
+.section-title {{
     font-size: 24px;
     font-weight: bold;
     color: #7c3aed;
     margin-bottom: 15px;
-}
+}}
 
 /* Button */
-div.stButton > button {
+div.stButton > button {{
     width: 100%;
     background: linear-gradient(to right, #7c3aed, #2563eb);
     color: white;
@@ -73,33 +109,33 @@ div.stButton > button {
     border-radius: 12px;
     font-size: 18px;
     font-weight: bold;
-}
+}}
 
 /* Result Box */
-.result-box {
+.result-box {{
     background-color: #ecfdf5;
     padding: 15px;
     border-radius: 12px;
     border-left: 6px solid #22c55e;
     margin-top: 20px;
-}
+}}
 
 /* Score */
-.score-text {
+.score-text {{
     font-size: 34px;
     font-weight: bold;
     color: #16a34a;
-}
+}}
 
 /* Tip Box */
-.tip-box {
+.tip-box {{
     background-color: #eff6ff;
     padding: 12px;
     border-radius: 10px;
     margin-top: 10px;
     color: #2563eb;
     font-size: 15px;
-}
+}}
 
 </style>
 """, unsafe_allow_html=True)
@@ -136,6 +172,14 @@ if "page" not in st.session_state:
 # =========================
 st.sidebar.markdown("# 🎓 Student Predictor")
 
+# Theme Selector
+theme_option = st.sidebar.selectbox(
+    "🎨 Select Theme",
+    ["Light", "Dark"]
+)
+
+st.session_state.theme = theme_option
+
 # Navigation
 if not st.session_state.logged_in:
 
@@ -161,10 +205,16 @@ if st.session_state.logged_in:
     st.sidebar.markdown("---")
     st.sidebar.markdown("## 👤 User Profile")
 
-    st.sidebar.image(
-        "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-        width=100
-    )
+    # Gender Based Image
+    if user_data["gender"] == "Male":
+
+        profile_pic = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+
+    else:
+
+        profile_pic = "https://cdn-icons-png.flaticon.com/512/6997/6997662.png"
+
+    st.sidebar.image(profile_pic, width=100)
 
     st.sidebar.write(f"### {user_data['name']}")
     st.sidebar.write(f"**Role:** {role}")
@@ -173,6 +223,7 @@ if st.session_state.logged_in:
 
     if role == "Student":
         st.sidebar.write(f"**Class:** {user_data['class']}")
+
     else:
         st.sidebar.write(f"**Relation:** {user_data['relation']}")
 
@@ -217,6 +268,11 @@ if st.session_state.page == "Sign Up" and not st.session_state.logged_in:
         full_name = st.text_input("👤 Full Name")
 
         username = st.text_input("🆔 Create Username")
+
+        gender = st.selectbox(
+            "⚧ Gender",
+            ["Male", "Female"]
+        )
 
         dob = st.date_input("📅 Date of Birth")
 
@@ -286,6 +342,7 @@ if st.session_state.page == "Sign Up" and not st.session_state.logged_in:
 
                     users["students"][username] = {
                         "name": full_name,
+                        "gender": gender,
                         "password": password,
                         "dob": str(dob),
                         "age": age,
@@ -307,6 +364,7 @@ if st.session_state.page == "Sign Up" and not st.session_state.logged_in:
 
                     users["parents"][username] = {
                         "name": full_name,
+                        "gender": gender,
                         "password": password,
                         "dob": str(dob),
                         "age": age,
@@ -318,7 +376,7 @@ if st.session_state.page == "Sign Up" and not st.session_state.logged_in:
 
                     st.success("🎉 Parent Account Created Successfully")
 
-    # BACK BUTTON
+    # Back Button
     if st.button("⬅ Back to Login"):
 
         st.session_state.page = "Login"
@@ -363,7 +421,7 @@ elif st.session_state.page == "Login" and not st.session_state.logged_in:
 
     if st.button("🚀 Login"):
 
-        # STUDENT LOGIN
+        # Student Login
         if role == "Student":
 
             if (
@@ -380,7 +438,7 @@ elif st.session_state.page == "Login" and not st.session_state.logged_in:
             else:
                 st.error("Invalid Username or Password")
 
-        # PARENT LOGIN
+        # Parent Login
         else:
 
             if (
@@ -499,7 +557,7 @@ elif st.session_state.logged_in:
             ["Yes", "No"]
         )
 
-    # PREDICT BUTTON
+    # Predict Button
     if st.button("🚀 Predict Score"):
 
         data = {
@@ -537,7 +595,7 @@ elif st.session_state.logged_in:
 
         final_score = int(round(final_score))
 
-        # RESULT BOX
+        # Result
         st.markdown(f"""
         <div class="result-box">
             <h2>🎯 Predicted Exam Score</h2>
@@ -619,15 +677,70 @@ elif st.session_state.logged_in:
 
         st.table(report_df)
 
-        # DOWNLOAD BUTTON
-        csv = report_df.to_csv(index=False)
+        # =========================
+        # PDF REPORT
+        # =========================
+        pdf_file = "student_report_card.pdf"
 
-        st.download_button(
-            label="⬇ Download Report Card",
-            data=csv,
-            file_name="student_report_card.csv",
-            mime="text/csv"
+        doc = SimpleDocTemplate(
+            pdf_file,
+            pagesize=letter
         )
+
+        styles = getSampleStyleSheet()
+
+        elements = []
+
+        title = Paragraph(
+            "Student Report Card",
+            styles['Title']
+        )
+
+        elements.append(title)
+
+        elements.append(Spacer(1, 12))
+
+        table_data = [
+            ["Field", "Value"]
+        ]
+
+        for key, value in report_data.items():
+            table_data.append([key, str(value)])
+
+        table = Table(
+            table_data,
+            colWidths=[200, 250]
+        )
+
+        table.setStyle(TableStyle([
+
+            ('BACKGROUND', (0,0), (-1,0), colors.purple),
+
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+
+            ('BOTTOMPADDING', (0,0), (-1,0), 10),
+
+            ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+
+        ]))
+
+        elements.append(table)
+
+        doc.build(elements)
+
+        # Download Button
+        with open(pdf_file, "rb") as file:
+
+            st.download_button(
+                label="⬇ Download PDF Report Card",
+                data=file,
+                file_name="student_report_card.pdf",
+                mime="application/pdf"
+            )
 
         # TIP
         st.markdown("""
