@@ -31,26 +31,27 @@ section[data-testid="stSidebar"] {
 
 /* Main Title */
 .main-title {
-    font-size: 48px;
-    font-weight: bold;
+    font-size: 70px;
+    font-weight: 800;
     color: #111827;
+    margin-bottom: 10px;
 }
 
 /* Subtitle */
 .subtitle {
-    font-size: 18px;
+    font-size: 20px;
     color: #6b7280;
     margin-bottom: 20px;
 }
 
 /* Card */
-#.card {
-    #background-color: white;
-    #padding: 25px;
-    #border-radius: 20px;
-    #box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
-    #margin-bottom: 20px;
-#}
+.card {
+    background-color: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
 
 /* Section Heading */
 .section-title {
@@ -60,7 +61,7 @@ section[data-testid="stSidebar"] {
     margin-bottom: 15px;
 }
 
-/* Predict Button */
+/* Button */
 div.stButton > button {
     width: 100%;
     background: linear-gradient(to right, #7c3aed, #2563eb);
@@ -72,7 +73,7 @@ div.stButton > button {
     font-weight: bold;
 }
 
-/* Small Result Box */
+/* Result Box */
 .result-box {
     background-color: #ecfdf5;
     padding: 15px;
@@ -96,15 +97,6 @@ div.stButton > button {
     margin-top: 10px;
     color: #2563eb;
     font-size: 15px;
-}
-
-/* Feature Box */
-.feature-box {
-    background-color: rgba(255,255,255,0.1);
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    color: white;
 }
 
 </style>
@@ -151,31 +143,6 @@ if not st.session_state.logged_in:
     if st.sidebar.button("📝 Sign Up"):
         st.session_state.page = "Sign Up"
 
-st.sidebar.markdown("---")
-
-# Features
-st.sidebar.markdown("## ✨ Features")
-
-st.sidebar.markdown("""
-<div class="feature-box">
-📊 AI-Based Prediction
-</div>
-
-<div class="feature-box">
-🎯 Accurate Score Estimation
-</div>
-
-<div class="feature-box">
-👨‍🎓 Student & Parent Login
-</div>
-
-<div class="feature-box">
-📚 Personalized Insights
-</div>
-""", unsafe_allow_html=True)
-
-st.sidebar.markdown("---")
-
 # Logout
 if st.session_state.logged_in:
 
@@ -207,39 +174,78 @@ if st.session_state.page == "Sign Up" and not st.session_state.logged_in:
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
+    role = st.selectbox(
+        "Register As",
+        ["Student", "Parent"]
+    )
+
     col1, col2 = st.columns(2)
 
     with col1:
 
-        role = st.selectbox(
-            "Register As",
-            ["Student", "Parent"]
-        )
+        full_name = st.text_input("👤 Full Name")
 
-        username = st.text_input("Create Username")
+        username = st.text_input("🆔 Create Username")
+
+        dob = st.date_input("📅 Date of Birth")
+
+        age = st.number_input(
+            "🎂 Age",
+            min_value=1,
+            max_value=100,
+            step=1
+        )
 
     with col2:
 
         password = st.text_input(
-            "Create Password",
+            "🔒 Create Password",
             type="password"
         )
 
         confirm = st.text_input(
-            "Confirm Password",
+            "🔑 Confirm Password",
             type="password"
         )
 
+        # Student Class
+        if role == "Student":
+
+            student_class = st.selectbox(
+                "🏫 Class",
+                [
+                    "1", "2", "3", "4", "5", "6",
+                    "7", "8", "9", "10", "11", "12"
+                ]
+            )
+
+        # Parent Relation
+        else:
+
+            relation = st.selectbox(
+                "👨‍👩‍👧 Relation with Student",
+                [
+                    "Father",
+                    "Mother",
+                    "Guardian",
+                    "Brother",
+                    "Sister",
+                    "Other"
+                ]
+            )
+
+    # CREATE ACCOUNT
     if st.button("✅ Create Account"):
 
         if password != confirm:
             st.error("Passwords do not match")
 
-        elif username == "" or password == "":
+        elif username == "" or password == "" or full_name == "":
             st.warning("Please fill all fields")
 
         else:
 
+            # STUDENT ACCOUNT
             if role == "Student":
 
                 if username in users["students"]:
@@ -247,13 +253,20 @@ if st.session_state.page == "Sign Up" and not st.session_state.logged_in:
 
                 else:
 
-                    users["students"][username] = password
+                    users["students"][username] = {
+                        "name": full_name,
+                        "password": password,
+                        "dob": str(dob),
+                        "age": age,
+                        "class": student_class
+                    }
 
                     with open(USER_FILE, "w") as f:
                         json.dump(users, f)
 
-                    st.success("Student Account Created")
+                    st.success("🎉 Student Account Created Successfully")
 
+            # PARENT ACCOUNT
             else:
 
                 if username in users["parents"]:
@@ -261,15 +274,22 @@ if st.session_state.page == "Sign Up" and not st.session_state.logged_in:
 
                 else:
 
-                    users["parents"][username] = password
+                    users["parents"][username] = {
+                        "name": full_name,
+                        "password": password,
+                        "dob": str(dob),
+                        "age": age,
+                        "relation": relation
+                    }
 
                     with open(USER_FILE, "w") as f:
                         json.dump(users, f)
 
-                    st.success("Parent Account Created")
+                    st.success("🎉 Parent Account Created Successfully")
 
-    # Back Button
+    # BACK BUTTON
     if st.button("⬅ Back to Login"):
+
         st.session_state.page = "Login"
         st.rerun()
 
@@ -312,11 +332,12 @@ elif st.session_state.page == "Login" and not st.session_state.logged_in:
 
     if st.button("🚀 Login"):
 
+        # STUDENT LOGIN
         if role == "Student":
 
             if (
                 username in users["students"]
-                and users["students"][username] == password
+                and users["students"][username]["password"] == password
             ):
 
                 st.session_state.logged_in = True
@@ -328,11 +349,12 @@ elif st.session_state.page == "Login" and not st.session_state.logged_in:
             else:
                 st.error("Invalid Username or Password")
 
+        # PARENT LOGIN
         else:
 
             if (
                 username in users["parents"]
-                and users["parents"][username] == password
+                and users["parents"][username]["password"] == password
             ):
 
                 st.session_state.logged_in = True
@@ -351,11 +373,11 @@ elif st.session_state.page == "Login" and not st.session_state.logged_in:
 # =========================
 elif st.session_state.logged_in:
 
-    # Load Model
+    # LOAD MODEL
     model = joblib.load("student_model.pkl")
     columns = joblib.load("model_columns.pkl")
 
-    # Header
+    # HEADER
     st.markdown(
         '<p class="main-title">🎓 Student Score Predictor</p>',
         unsafe_allow_html=True
@@ -368,7 +390,9 @@ elif st.session_state.logged_in:
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    # Academic Section
+    # =========================
+    # ACADEMIC FACTORS
+    # =========================
     st.markdown(
         '<p class="section-title">📊 Academic Factors</p>',
         unsafe_allow_html=True
@@ -400,7 +424,9 @@ elif st.session_state.logged_in:
             0.0, 12.0
         )
 
-    # Personal Section
+    # =========================
+    # PERSONAL FACTORS
+    # =========================
     st.markdown(
         '<p class="section-title">🧠 Personal & School Factors</p>',
         unsafe_allow_html=True
@@ -462,7 +488,9 @@ elif st.session_state.logged_in:
             ["Yes", "No"]
         )
 
-    # Predict
+    # =========================
+    # PREDICT BUTTON
+    # =========================
     if st.button("🚀 Predict Score"):
 
         data = {
@@ -501,7 +529,7 @@ elif st.session_state.logged_in:
 
         final_score = int(round(final_score))
 
-        # SMALL RESULT BOX
+        # RESULT BOX
         st.markdown(f"""
         <div class="result-box">
             <h2>🎯 Predicted Exam Score</h2>
@@ -510,7 +538,7 @@ elif st.session_state.logged_in:
         </div>
         """, unsafe_allow_html=True)
 
-        # TIP
+        # TIP BOX
         st.markdown("""
         <div class="tip-box">
         💡 Tip: Regular study + good sleep + positive mindset = better performance.
