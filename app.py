@@ -44,13 +44,13 @@ section[data-testid="stSidebar"] {
 }
 
 /* Card */
-.card {
-    background-color: white;
-    padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-}
+#.card {
+    #background-color: white;
+    #padding: 25px;
+    #border-radius: 20px;
+    #box-shadow: 0px 4px 15px rgba(0,0,0,0.08);
+    #margin-bottom: 20px;
+#}
 
 /* Section Heading */
 .section-title {
